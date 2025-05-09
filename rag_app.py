@@ -39,9 +39,24 @@ if user_input:
     # 類似検索（上位3件）
     D, I = index.search(vec, k=3)
 
-    # ✅ スコアが高い（＝遠い）ならGPTで補完回答
-    threshold = 1.0
-    if all([score > threshold for score in D[0]]):
+    # スコア1.3未満のみを抽出
+    filtered_results = [(faq_data[idx], D[0][i]) for i, idx in enumerate(I[0]) if D[0][i] < 1.3]
+
+    # すべてのスコアが1.0以上なら補完回答を出す
+    should_supplement = all(score >= 1.0 for score in D[0])
+
+    # ✅ 補完 + 限定FAQ表示
+    if should_supplement:
+        # 類似FAQ（スコア1.3未満のみ）を「参考」として表示
+        if filtered_results:
+            st.subheader("類似FAQ（参考）:")
+            for i, (faq, distance) in enumerate(filtered_results):
+                st.markdown(f"**{i+1}. Q: {faq['question']}**")
+                st.write(f"→ {faq['answer']}")
+                st.caption(f"類似スコア（小さいほど近い）: `{distance:.4f}`")
+                st.markdown("---")
+
+        # GPTによる補完回答
         st.subheader("補完回答")
         prompt = f"""
 以下の質問に対して、一般的かつ信頼性の高い内容に基づいたビジネス向けの回答を提供してください。
@@ -55,13 +70,15 @@ if user_input:
         )
         st.write(response.choices[0].message.content)
         st.caption("※ ChatGPTは2023年4月時点までの知識に基づき回答しています。")
+
     else:
-        # ✅ 通常のFAQ検索結果を表示
-        st.subheader("類似FAQ（関連度順）:")
-        for i, idx in enumerate(I[0]):
-            faq = faq_data[idx]
-            distance = D[0][i]
-            st.markdown(f"**{i+1}. Q: {faq['question']}**")
-            st.write(f"→ {faq['answer']}")
-            st.caption(f"類似スコア（小さいほど近い）: `{distance:.4f}`")
-            st.markdown("---")
+        # 通常表示（スコア1.3未満のみ表示）
+        if filtered_results:
+            st.subheader("類似FAQ（関連度順）:")
+            for i, (faq, distance) in enumerate(filtered_results):
+                st.markdown(f"**{i+1}. Q: {faq['question']}**")
+                st.write(f"→ {faq['answer']}")
+                st.caption(f"類似スコア（小さいほど近い）: `{distance:.4f}`")
+                st.markdown("---")
+        else:
+            st.warning("類似するFAQが見つかりませんでした。")
