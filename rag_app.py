@@ -18,7 +18,7 @@ with open("faq_data.pkl", "rb") as f:
     faq_data = pickle.load(f)
 
 # ✅ Streamlit タイトル
-st.title("社内FAQ検索（RAG + GPT補完）")
+st.title("社内FAQ検索")
 
 # ✅ FAQ一覧表示（DataFrame形式）
 with st.expander("FAQ一覧（検索・ソート可）"):
@@ -40,9 +40,9 @@ if user_input:
     D, I = index.search(vec, k=3)
 
     # ✅ スコアが高い（＝遠い）ならGPTで補完回答
-    threshold = 1.2
+    threshold = 1.0
     if all([score > threshold for score in D[0]]):
-        st.subheader("GPTによる補完回答（FAQに類似なし）")
+        st.subheader("補完回答")
         prompt = f"""
 以下の質問に対して、一般的かつ信頼性の高い内容に基づいたビジネス向けの回答を提供してください。
 文章は絵文字を使用せず、丁寧かつ簡潔に記述してください。
